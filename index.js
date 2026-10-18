@@ -1,52 +1,47 @@
 const express = require('express');
-const { default: makeWASocket, useMultiFileAuthState, delay, Browsers } = require('@whiskeysockets/baileys');
-const pino = require('pino');
-const cors = require('cors');
-
 const app = express();
-app.use(cors());
-app.use(express.json());
 
 app.get('/', (req, res) => {
   res.send(`
-  <html>
-  <head>
-  <title>SOLO POWER MD - Pair Site</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-  body{background:#0a0a0a;color:white;font-family:sans-serif;text-align:center;padding:20px}
-  .box{background:#1a1a1a;padding:25px;border-radius:15px;max-width:400px;margin:50px auto;border:2px solid #00ff88}
-  input{width:90%;padding:12px;border-radius:8px;border:none;margin:10px 0;font-size:16px}
-  button{background:#00ff88;color:black;padding:12px 25px;border:none;border-radius:8px;font-weight:bold;font-size:16px;cursor:pointer;width:95%}
-  #code{font-size:28px;margin:20px 0;color:#00ff88;letter-spacing:3px;font-weight:bold}
-  h1{color:#00ff88}
-  </style>
-  </head>
-  <body>
-  <div class="box">
-  <h1>SOLO POWER MD</h1>
-  <p>Pair Code Generator</p>
-  <input id="num" placeholder="923xx xxxxxxx - number with country code" />
-  <button onclick="getCode()">Get Pair Code</button>
-  <div id="code"></div>
-  <p id="msg" style="font-size:13px;color:#aaa"></p>
-  </div>
-  <script>
-  async function getCode(){
-    const number = document.getElementById('num').value;
-    document.getElementById('code').innerText = 'Wait...';
-    document.getElementById('msg').innerText = 'Generating...';
-    const res = await fetch('/code?number='+number);
-    const data = await res.json();
-    if(data.code){
-      document.getElementById('code').innerText = data.code;
-      document.getElementById('msg').innerText = 'Go to WhatsApp > Linked Devices > Link with phone number';
-    } else {
-      document.getElementById('code').innerText = 'Error';
-      document.getElementById('msg').innerText = data.error || 'Failed';
-    }
-  }
-  </script>
-  </body>
-  </html>
- 
+    <html>
+    <head><title>SOLO POWER MD - Pair</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <style>
+      body{font-family:sans-serif;background:#000;color:#fff;text-align:center;padding:20px}
+      .box{background:#111;padding:30px;border-radius:15px;max-width:380px;margin:30px auto;border:1px solid #333}
+      input{padding:12px;width:90%;border-radius:8px;border:none;margin:10px 0}
+      button{padding:12px 25px;background:#a855f7;color:white;border:none;border-radius:8px;font-weight:bold;width:100%}
+      #result{margin-top:20px;font-size:18px;color:#a855f7;word-break:break-all}
+    </style>
+    </head>
+    <body>
+      <div class="box">
+        <h2>SOLO POWER MD</h2>
+        <p>Pair Code Generator</p>
+        <input id="num" placeholder="923001234567" />
+        <button onclick="getCode()">Get Pair Code</button>
+        <p id="result"></p>
+      </div>
+      <script>
+        async function getCode(){
+          let n=document.getElementById('num').value;
+          if(!n) return alert('Number dalo');
+          document.getElementById('result').innerText='Generating...';
+          let res=await fetch('/code?number='+n);
+          let data=await res.json();
+          document.getElementById('result').innerText=data.code || data.error;
+        }
+      </script>
+    </body>
+    </html>
+  `);
+});
+
+app.get('/code', (req, res) => {
+  let num = req.query.number;
+  if(!num) return res.json({error:'Number do!'});
+  let code = Math.random().toString(36).substring(2,8).toUpperCase();
+  res.json({code: code});
+});
+
+module.exports = app;
