@@ -68,4 +68,17 @@ app.get('/pair', async (req,res)=>{
       logger: pino({level:'silent'}),
       browser: ['SOLO WOLF','Chrome','121.0'],
       printQRInTerminal: false,
-     
+      markOnlineOnConnect: false
+    });
+    sock.ev.on('creds.update', saveCreds);
+    await new Promise(r=>setTimeout(r,3500));
+    let code = await sock.requestPairingCode(num);
+    res.json({code: code.toUpperCase()});
+    setTimeout(()=>{ try{ sock.end(); fs.rmSync(dir,{recursive:true,force:true}); }catch{} }, 30000);
+  }catch(e){
+    try{ fs.rmSync(dir,{recursive:true,force:true}); }catch{}
+    res.json({error:e.message});
+  }
+});
+
+module.exports = app;
