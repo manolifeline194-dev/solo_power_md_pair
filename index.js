@@ -1,93 +1,54 @@
 const express = require('express');
-const { default: makeWASocket, useMultiFileAuthState, delay, makeCacheableSignalKeyStore, DisconnectReason } = require('@whiskeysockets/baileys');
-const pino = require('pino');
-const fs = require('fs');
-const path = require('path');
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-  res.send(`
-  <html><head><title>SOLO POWER MD</title><meta name="viewport" content="width=device-width,initial-scale=1">
-  <style>
-    body{margin:0;background:#000;color:#fff;font-family:sans-serif;text-align:center}
-    .box{background:#111;padding:30px;border-radius:20px;max-width:400px;margin:40px auto;border:1px solid #a855f7;box-shadow:0 0 30px rgba(168,85,247,0.3)}
-    h1{color:#a855f7;text-shadow:0 0 10px #a855f7}
-    input{padding:14px;width:90%;border-radius:10px;border:2px solid #333;background:#000;color:#fff;text-align:center;font-size:16px}
-    button{padding:14px;width:95%;background:linear-gradient(90deg,#a855f7,#7e22ce);color:#fff;border:none;border-radius:10px;font-weight:bold;margin-top:15px;cursor:pointer;font-size:16px}
-    #result{margin-top:25px;font-size:26px;color:#a855f7;font-weight:bold;letter-spacing:4px;min-height:40px}
-    .info{font-size:12px;color:#888;margin-top:20px;text-align:left;background:#0a0a0a;padding:15px;border-radius:10px}
-  </style></head>
-  <body>
-    <div class="box">
-      <h1>SOLO POWER MD</h1>
-      <p>Real Pair Code Generator</p>
-      <input id="num" placeholder="923001234567 (without +)" />
-      <button onclick="getCode()">⚡ GET REAL PAIR CODE ⚡</button>
-      <div id="result"></div>
-      <div class="info">
-        <b>Method:</b><br>
-        1. 92 se number likho<br>
-        2. Button dabao<br>
-        3. Code ayega jaise <b>ABCD-EFGH</b><br>
-        4. WhatsApp > Linked Devices > Link with phone number > Code paste karo
-      </div>
-    </div>
-    <script>
-      async function getCode(){
-        let n=document.getElementById('num').value;
-        if(!n) return alert('Number dalo!');
-        document.getElementById('result').innerText='Generating... 20-30 sec lagega...';
-        try{
-          let r=await fetch('/code?number='+n);
-          let d=await r.json();
-          document.getElementById('result').innerText=d.code || d.error;
-        }catch(e){document.getElementById('result').innerText='Error, dobara try karo';}
-      }
-    </script>
-  </body></html>
-  `);
+  res.send(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SOLO POWER MD</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif}
+body{background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:15px}
+.box{background:#111;border:1px solid #a855f7;border-radius:20px;padding:28px;width:100%;max-width:420px;text-align:center;box-shadow:0 0 25px rgba(168,85,247,.3)}
+.logo{width:70px;height:70px;background:linear-gradient(135deg,#a855f7,#7c3aed);border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:32px}
+h1{color:#a855f7;font-size:23px;font-weight:900}.sub{color:#777;font-size:12px;margin:6px 0 18px}
+input{width:100%;padding:14px;background:#000;border:1px solid #333;border-radius:10px;color:#fff;outline:none;margin-bottom:10px}
+button{width:100%;padding:14px;background:linear-gradient(135deg,#a855f7,#7c3aed);border:none;border-radius:10px;color:#fff;font-weight:bold;cursor:pointer}
+#res{margin-top:14px;background:#000;border:1px dashed #333;padding:14px;border-radius:10px;color:#aaa;min-height:50px;word-break:break-all}
+.code{color:#a855f7;font-size:30px;font-weight:900;letter-spacing:3px}
+</style></head>
+<body>
+<div class="box"><div class="logo">⚡</div><h1>SOLO POWER MD</h1><p class="sub">Vercel Pair - Active ✅</p>
+<input id="num" placeholder="923716474176"><button id="btn" onclick="getCode()">⚡ GET PAIR CODE</button>
+<div id="res">Number likho phir button dabao</div></div>
+<script>
+async function getCode(){
+let n=document.getElementById('num').value.replace(/[^0-9]/g,'');let r=document.getElementById('res');let b=document.getElementById('btn');
+if(n.length<10){r.innerHTML='❌ Sahi number likho';return}
+b.innerText='⏳ Wait...';b.disabled=true;r.innerHTML='⏳ Generating 15s...';
+try{let d=await fetch('/pair?number='+n).then(x=>x.json());
+if(d.code){r.innerHTML='Code: <br><b class=code>'+d.code+'</b><br><br><button onclick=navigator.clipboard.writeText(\\''+d.code+'\\') style=width:auto;padding:6px 14px;font-size:12px>📋 Copy</button><br><br><small>WhatsApp > Linked Devices > Link with phone number</small>';b.innerText='✅ Done'}
+else{r.innerHTML='❌ '+d.error;b.disabled=false;b.innerText='GET PAIR CODE'}}catch(e){r.innerHTML='❌ '+e.message;b.disabled=false;b.innerText='GET PAIR CODE'}}
+</script></body></html>`);
 });
 
-app.get('/code', async (req, res) => {
-  let num = req.query.number?.replace(/[^0-9]/g,'');
-  if(!num) return res.json({error:'Number do!'});
-  
-  let tempDir = path.join('/tmp', 'auth_'+Date.now());
+app.get('/pair', async (req,res)=>{
   try{
-    if(!fs.existsSync(tempDir)) fs.mkdirSync(tempDir,{recursive:true});
-    
-    const { state, saveCreds } = await useMultiFileAuthState(tempDir);
-    const sock = makeWASocket({
-      auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, pino({level:'silent'})) },
-      printQRInTerminal: false,
-      logger: pino({level:'silent'}),
-      browser: ['SOLO POWER MD','Chrome','1.0.0'],
-      syncFullHistory: false
-    });
-
-    sock.ev.on('creds.update', saveCreds);
-    
-    await delay(3000);
-    
-    if(!sock.authState.creds.registered){
-      let code = await sock.requestPairingCode(num);
-      code = code?.match(/.{1,4}/g)?.join('-') || code;
-      res.json({code: code});
-    } else {
-      res.json({error:'Already registered'});
-    }
-
-    setTimeout(()=>{
-      try{ sock.ws.close(); }catch{}
-      try{ fs.rmSync(tempDir,{recursive:true,force:true}); }catch{}
-    }, 8000);
-
-  }catch(e){
-    console.log('Pair Error:', e);
-    try{ fs.rmSync(tempDir,{recursive:true,force:true}); }catch{}
-    res.json({error: 'Failed: '+e.message+'. Dobara try karo ya number check karo'});
-  }
+    const num=(req.query.number||'').replace(/[^0-9]/g,'');
+    if(!num) return res.json({error:'number missing'});
+    const {default:makeWASocket, useMultiFileAuthState} = await import('@whiskeysockets/baileys');
+    const pino = require('pino');
+    const fs = require('fs');
+    const path = require('path');
+    const dir = path.join('/tmp','auth_'+num);
+    if(fs.existsSync(dir)) fs.rmSync(dir,{recursive:true,force:true});
+    const {state,saveCreds}=await useMultiFileAuthState(dir);
+    const sock=makeWASocket({auth:state,logger:pino({level:'silent'}),browser:['SOLO','Chrome','121']});
+    sock.ev.on('creds.update',saveCreds);
+    await new Promise(r=>setTimeout(r,1500));
+    const code = await sock.requestPairingCode(num);
+    res.json({code});
+    setTimeout(()=>{try{sock.end()}catch{}},25000);
+  }catch(e){res.json({error:e.message})}
 });
 
-app.listen(PORT, ()=> console.log('SOLO POWER MD Running on '+PORT));
+module.exports = app;
