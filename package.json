@@ -1,11 +1,9 @@
 {
   "name": "solo-power-md",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": { "start": "node index.js" },
   "dependencies": {
     "express": "4.18.2",
     "@whiskeysockets/baileys": "6.5.0",
-    "pino": "8.17.0"
+    "pino": "8.17.0",
+    "qrcode": "1.5.3"
   }
 }
